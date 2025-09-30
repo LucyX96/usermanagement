@@ -1,0 +1,66 @@
+
+GUIDA PASSO PASSO: CERTIFICATO HTTPS PER BACKEND SPRING E APK ANDROID
+
+Step 1: Creare un certificato self-signed con IP locale
+---------------------------------------------------------
+Apri PowerShell (Windows) con OpenSSL installato e lancia questo comando (sostituisci 192.168.1.77 con l'IP del tuo server):
+Opzione 1: tutto in una riga
+openssl req -newkey rsa:2048 -nodes -x509 -days 36500 -addext "subjectAltName = IP.1:192.168.1.77" -keyout C:\certsackend.key -out C:\certsackend.crt
+
+Opzione 2: con backtick per andare a capo
+openssl req `
+-newkey rsa:2048 `
+-nodes `
+-x509 `
+-days 36500 `
+-addext "subjectAltName = IP.1:192.168.1.77" `
+-keyout C:\certsackend.key `
+-out C:\certsackend.crt
+
+Step 2: Convertire in PKCS12 per Spring Boot
+---------------------------------------------
+openssl pkcs12 -export -in C:\certsackend.crt -inkey C:\certsackend.key -out C:\certsackend.p12 -name spring
+
+Step 3: Aggiornare application.properties di Spring Boot
+--------------------------------------------------------
+server.ssl.key-store=classpath:certs/backend.p12
+server.ssl.key-store-password=changeit
+server.ssl.key-store-type=PKCS12
+server.ssl.key-alias=spring
+
+Step 4: Configurare environment.ts per Ionic/Capacitor
+------------------------------------------------------
+export const environment = {
+  production: true,
+  apiUrl: 'https://192.168.1.77:8081'
+};
+
+Step 5: Aggiungere certificato all’APK Android
+-----------------------------------------------
+1. Vai nella cartella android/app/src/main/res/
+2. Crea la cartella raw se non esiste: android/app/src/main/res/raw/
+3. Copia backend.crt nella cartella raw e rinominalo backend_cert.crt
+
+Step 6: Creare network_security_config.xml
+------------------------------------------
+1. Crea la cartella xml in android/app/src/main/res/ se non esiste
+2. Crea network_security_config.xml con il seguente contenuto:
+
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="@raw/backend_cert"/>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>
+
+Step 7: Collegare network config al Manifest
+--------------------------------------------
+Apri AndroidManifest.xml e aggiungi all’elemento <application>:
+<application
+    android:networkSecurityConfig="@xml/network_security_config"
+    ...>
+
+✅ Ora l’APK dovrebbe fidarsi del certificato locale e le chiamate HTTPS dovrebbero funzionare.
