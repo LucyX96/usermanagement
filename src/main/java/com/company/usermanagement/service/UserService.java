@@ -39,7 +39,6 @@ public class UserService implements UserDetailsService {
             throw new UserAlreadyExistsException("Email già esistente");
         }
 
-
         User newUser = new User();
         newUser.setUsername(username);
         newUser.setPassword(passwordEncoder.encode(rawPassword));
@@ -48,7 +47,7 @@ public class UserService implements UserDetailsService {
         newUser.setEnabled(true);
         Set<Role> roles = new HashSet<>();
 
-        if (userCount==0) {
+        if (userCount == 0) {
             roles.add(Role.ADMIN);
         } else {
             roles.add(Role.USER);
@@ -57,13 +56,12 @@ public class UserService implements UserDetailsService {
 
         User savedUser = userRepository.save(newUser);
 
-        if (savedUser.getId()==null) {
+        if (savedUser.getId() == null) {
             throw new RegistrationException("Errore durante la registrazione");
         }
         return savedUser;
     }
 
-    //For login user
     @Override
     public User loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)

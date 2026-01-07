@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record LoginRequestDTO(
-
         @NotBlank(message = "Lo username non può essere vuoto")
         String username,
 

@@ -41,14 +41,9 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = jwtService.generateToken(authentication);
-
-
         User user = userService.loadUserByUsername(requestDTO.username());
-
-
         LoginResponseDTO response = new LoginResponseDTO(token, user.getName());
 
-        // Restituisci il DTO, Spring lo convertirà in JSON automaticamente
         return ResponseEntity.ok(response);
     }
 
@@ -57,6 +52,4 @@ public class AuthController {
         userService.registerUser(requestDTO);
         return ResponseEntity.ok("Registrazione OK");
     }
-
-
 }

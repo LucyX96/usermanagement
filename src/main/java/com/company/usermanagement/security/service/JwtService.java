@@ -1,11 +1,8 @@
 package com.company.usermanagement.security.service;
 
-import com.company.usermanagement.configuration.security.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,12 +16,8 @@ import java.util.function.Function;
 public class JwtService {
     private final SecretKey secretKey;
 
-    public JwtService(JwtProperties jwtProperties, SecretKey secretKey) {
-        //        byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.secret());
-        this.secretKey = Keys.hmacShaKeyFor(
-                Decoders.BASE64.decode(jwtProperties.secret())
-        );
-
+    public JwtService(SecretKey secretKey) {
+        this.secretKey = secretKey;
     }
 
     @PostConstruct

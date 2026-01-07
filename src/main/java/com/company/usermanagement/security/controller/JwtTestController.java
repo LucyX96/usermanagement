@@ -1,6 +1,5 @@
 package com.company.usermanagement.security.controller;
 
-
 import com.company.usermanagement.security.dto.JwtCustomRequest;
 import com.company.usermanagement.security.service.JwtSecretGeneratorService;
 import com.company.usermanagement.security.utility.JwtUtils;
@@ -47,4 +46,3 @@ public class JwtTestController {
         );
     }
 }
-

@@ -40,7 +40,7 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         String idForEncode = "bcrypt";
-        Map encoders = new HashMap<>();
+        Map<String, PasswordEncoder> encoders = new HashMap<>();
         encoders.put(idForEncode, new BCryptPasswordEncoder());
         encoders.put("noop", NoOpPasswordEncoder.getInstance());
         encoders.put("pbkdf2@SpringSecurity_v5_8", Pbkdf2PasswordEncoder.defaultsForSpringSecurity_v5_8());
@@ -125,5 +125,4 @@ public class SecurityConfig {
     }
 
 }
-
 

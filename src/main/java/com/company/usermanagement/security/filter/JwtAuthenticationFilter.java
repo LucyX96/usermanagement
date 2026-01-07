@@ -13,11 +13,15 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
     private final UserService userService;
@@ -48,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 4. Estrai lo username dal token
         final String username = jwtService.extractUsername(jwt);
-        System.out.println(username);
+        LOGGER.debug("JWT subject extracted: {}", username);
 
         // 5. Controlla se lo username esiste e se l'utente non è già autenticato
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

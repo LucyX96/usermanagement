@@ -13,6 +13,8 @@ import java.util.Map;
 @Component
 public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
@@ -27,6 +29,6 @@ public class AuthEntryPointJwt implements AuthenticationEntryPoint {
                 "message", "Token JWT mancante o non valido"
         );
 
-        new ObjectMapper().writeValue(response.getOutputStream(), body);
+        OBJECT_MAPPER.writeValue(response.getOutputStream(), body);
     }
 }

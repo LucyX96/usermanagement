@@ -11,13 +11,14 @@ import java.io.IOException;
 
 @Component
 public class AccessDeniedHandlerJwt implements AccessDeniedHandler {
+    private static final String FORBIDDEN_JSON = "{\"error\":\"FORBIDDEN\"}";
+
     @Override
     public void handle(HttpServletRequest request,
                        HttpServletResponse response,
                        AccessDeniedException ex) throws IOException, ServletException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
-        response.getWriter().write("{\"error\":\"FORBIDDEN\"}");
+        response.getWriter().write(FORBIDDEN_JSON);
     }
 }
-

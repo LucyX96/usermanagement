@@ -1,7 +1,6 @@
 package com.company.usermanagement.exception;
 
-import lombok.*;
-
+import lombok.Builder;
 import java.time.LocalDateTime;
 
 @Builder
@@ -12,4 +11,3 @@ public record ApiErrorResponse(int status, String error, String message, LocalDa
     }
 
 }
-

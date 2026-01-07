@@ -16,5 +16,4 @@ public class JwtCustomRequest {
     private Map<String, Object> claims;
 
     private Long expirationMs;
-
 }
