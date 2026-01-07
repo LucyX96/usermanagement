@@ -4,6 +4,8 @@ import com.company.usermanagement.entity.Role;
 import com.company.usermanagement.entity.User;
 import com.company.usermanagement.entity.dtoIN.RegisterRequestDTO;
 import com.company.usermanagement.entity.dtoOut.RegisterResponseDTO;
+import com.company.usermanagement.exception.RegistrationException;
+import com.company.usermanagement.exception.UserAlreadyExistsException;
 import com.company.usermanagement.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -29,9 +31,14 @@ public class UserService implements UserDetailsService {
         String email = requestDTO.email();
         String name = requestDTO.name();
         long userCount = userRepository.count();
-        if(userRepository.findByUsername(username).isPresent() && userRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("Username already exist");
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new UserAlreadyExistsException("Username già esistente");
         }
+
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new UserAlreadyExistsException("Email già esistente");
+        }
+
 
         User newUser = new User();
         newUser.setUsername(username);
@@ -49,12 +56,11 @@ public class UserService implements UserDetailsService {
         newUser.setRoles(roles);
 
         User savedUser = userRepository.save(newUser);
-        if (savedUser != null && savedUser.getId() != null) {
-            return savedUser;
+
+        if (savedUser.getId()==null) {
+            throw new RegistrationException("Errore durante la registrazione");
         }
-        else {
-            throw new RuntimeException("Errore nella registrazione");
-        }
+        return savedUser;
     }
 
     //For login user
