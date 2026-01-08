@@ -1,12 +1,9 @@
 package com.company.usermanagement.exception;
 
-import java.io.Serial;
+import org.springframework.http.HttpStatus;
 
-public class UserAlreadyExistsException extends RuntimeException {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class UserAlreadyExistsException extends ApiException {
     public UserAlreadyExistsException(String message) {
-        super(message);
+        super(HttpStatus.CONFLICT, ErrorCode.USER_ALREADY_EXISTS);
     }
 }

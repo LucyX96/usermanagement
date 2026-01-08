@@ -2,54 +2,85 @@ package com.company.usermanagement.controller;
 
 import com.company.usermanagement.entity.User;
 import com.company.usermanagement.entity.dtoIN.LoginRequestDTO;
+import com.company.usermanagement.entity.dtoIN.RefreshRequestDTO;
 import com.company.usermanagement.entity.dtoIN.RegisterRequestDTO;
-import com.company.usermanagement.entity.dtoOut.LoginResponseDTO;
+import com.company.usermanagement.entity.dtoOut.TokenPairResponseDTO;
+import com.company.usermanagement.entity.dtoOut.RegisterResponseDTO;
 import com.company.usermanagement.security.service.JwtService;
+import com.company.usermanagement.service.RefreshTokenService;
 import com.company.usermanagement.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Authentication", description = "Endpoint per Login e Logout")
+@Tag(name = "Auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final UserService userService;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final UserService userService;
 
-    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtService jwtService) {
+    public AuthController(
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService,
+            UserService userService
+    ) {
         this.authenticationManager = authenticationManager;
-        this.userService = userService;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
+        this.userService = userService;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO requestDTO) {
+    public ResponseEntity<TokenPairResponseDTO> login(@Valid @RequestBody LoginRequestDTO requestDTO) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        requestDTO.username(), requestDTO.password())
+                new UsernamePasswordAuthenticationToken(requestDTO.username(), requestDTO.password())
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String token = jwtService.generateToken(authentication);
-        User user = userService.loadUserByUsername(requestDTO.username());
-        LoginResponseDTO response = new LoginResponseDTO(token, user.getName());
 
-        return ResponseEntity.ok(response);
+        String access = jwtService.generateAccessToken(authentication);
+        User user = (User) authentication.getPrincipal();
+
+        String refresh = refreshTokenService.issueRefreshToken(user.getUsername());
+
+        return ResponseEntity.ok(new TokenPairResponseDTO(access, refresh));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequestDTO requestDTO) {
-        userService.registerUser(requestDTO);
-        return ResponseEntity.ok("Registrazione OK");
+    public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO requestDTO) {
+        User saved = userService.registerUser(requestDTO);
+        return ResponseEntity.status(CREATED)
+                .body(new RegisterResponseDTO(saved.getUsername(), saved.getName()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenPairResponseDTO> refresh(@Valid @RequestBody RefreshRequestDTO request) {
+        // il subject lo estraiamo dal refresh token (se malformato -> 401 nel service)
+        String username = jwtService.extractUsername(request.refreshToken());
+
+        RefreshTokenService.TokenPair rotated = refreshTokenService.rotate(request.refreshToken(), username);
+
+        return ResponseEntity.ok(new TokenPairResponseDTO(rotated.accessToken(), rotated.refreshToken()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof User user) {
+            refreshTokenService.revokeAll(user.getUsername());
+        }
+        return ResponseEntity.noContent().build();
     }
 }

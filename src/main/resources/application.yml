@@ -1,0 +1,9 @@
+security:
+  jwt:
+    secret: ${SECURITY_SECRET}
+    expiration: PT15M
+    refresh-expiration: P7D
+    issuer: usermanagement-api
+    audience: usermanagement-client
+    header: Authorization
+    prefix: Bearer

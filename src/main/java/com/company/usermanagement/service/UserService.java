@@ -3,68 +3,85 @@ package com.company.usermanagement.service;
 import com.company.usermanagement.entity.Role;
 import com.company.usermanagement.entity.User;
 import com.company.usermanagement.entity.dtoIN.RegisterRequestDTO;
-import com.company.usermanagement.entity.dtoOut.RegisterResponseDTO;
 import com.company.usermanagement.exception.RegistrationException;
 import com.company.usermanagement.exception.UserAlreadyExistsException;
 import com.company.usermanagement.repository.UserRepository;
-import org.springframework.security.core.userdetails.UserDetails;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.util.HashSet;
+
+import java.util.Locale;
 import java.util.Set;
 
 @Service
 public class UserService implements UserDetailsService {
-    private final PasswordEncoder passwordEncoder;
-    private final UserRepository userRepository;
 
-    public UserService(PasswordEncoder passwordEncoder, UserRepository userRepository) {
-        this.passwordEncoder = passwordEncoder;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public User registerUser(RegisterRequestDTO requestDTO) {
-        String username = requestDTO.username();
-        String rawPassword = requestDTO.password();
-        String email = requestDTO.email();
-        String name = requestDTO.name();
-        long userCount = userRepository.count();
-        if (userRepository.findByUsername(username).isPresent()) {
+    @Transactional
+    public User registerUser(RegisterRequestDTO request) {
+        String username = normalizeUsername(request.username());
+        String email = normalizeEmail(request.email());
+
+        // check “fast”
+        if (userRepository.existsByUsername(username)) {
             throw new UserAlreadyExistsException("Username già esistente");
         }
-
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.existsByEmail(email)) {
             throw new UserAlreadyExistsException("Email già esistente");
         }
 
-        User newUser = new User();
-        newUser.setUsername(username);
-        newUser.setPassword(passwordEncoder.encode(rawPassword));
-        newUser.setEmail(email);
-        newUser.setName(name);
-        newUser.setEnabled(true);
-        Set<Role> roles = new HashSet<>();
+        try {
+            User user = User.builder()
+                    .username(username)
+                    .password(passwordEncoder.encode(request.password()))
+                    .email(email)
+                    .name(request.name().trim())
+                    .enabled(true)
+                    .roles(Set.of(Role.USER))
+                    .build();
 
-        if (userCount == 0) {
-            roles.add(Role.ADMIN);
-        } else {
-            roles.add(Role.USER);
-        }
-        newUser.setRoles(roles);
+            User saved = userRepository.save(user);
 
-        User savedUser = userRepository.save(newUser);
-
-        if (savedUser.getId() == null) {
+            if (saved.getId() == null) {
+                throw new RegistrationException("Errore durante la registrazione");
+            }
+            return saved;
+        } catch (UserAlreadyExistsException e) {
+            throw e;
+        } catch (Exception e) {
+            // se scatta il vincolo unique DB per race condition, finisci qui
             throw new RegistrationException("Errore durante la registrazione");
         }
-        return savedUser;
     }
 
     @Override
     public User loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        String normalized = normalizeUsername(username);
+        return userRepository.findByUsername(normalized)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found with username: " + normalized)
+                );
+    }
+
+    private String normalizeUsername(String username) {
+        if (username == null) return null;
+        return username.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) return null;
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

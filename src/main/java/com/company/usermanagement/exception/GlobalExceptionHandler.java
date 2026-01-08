@@ -1,60 +1,92 @@
 package com.company.usermanagement.exception;
 
-import org.springframework.http.HttpStatus;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-//    private static final String USER_ALREADY_EXISTS = "USER_ALREADY_EXISTS";
-//    private static final String USER_NOT_FOUND = "USER_NOT_FOUND";
-//    private static final String REGISTRATION_ERROR = "REGISTRATION_ERROR";
-//    private static final String INTERNAL_ERROR = "INTERNAL_ERROR";
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ApiErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiErrorResponse> handleApiException(ApiException ex) {
         return ResponseEntity
-                .status(HttpStatus.CONFLICT)
+                .status(ex.getStatus())
                 .body(new ApiErrorResponse(
-                        HttpStatus.CONFLICT.value(),
-                        ErrorCode.USER_ALREADY_EXISTS.toString(),
+                        ex.getStatus().value(),
+                        ex.getErrorCode().name(),
                         ex.getMessage()
                 ));
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleUserNotFound(UsernameNotFoundException ex) {
+        // uniforma anche questa, senza spargere UsernameNotFoundException in giro
         return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(404)
                 .body(new ApiErrorResponse(
-                        HttpStatus.NOT_FOUND.value(),
-                        ErrorCode.USER_NOT_FOUND.toString(),
+                        404,
+                        ErrorCode.USER_NOT_FOUND.name(),
                         ex.getMessage()
                 ));
     }
 
-    @ExceptionHandler(RegistrationException.class)
-    public ResponseEntity<ApiErrorResponse> handleRegistrationError(RegistrationException ex) {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
+            fieldErrors.putIfAbsent(fe.getField(), fe.getDefaultMessage());
+        }
+
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .badRequest()
                 .body(new ApiErrorResponse(
-                        HttpStatus.BAD_REQUEST.value(),
-                        ErrorCode.REGISTRATION_ERROR.toString(),
-                        ex.getMessage()
+                        400,
+                        ErrorCode.VALIDATION_ERROR.name(),
+                        "Richiesta non valida",
+                        fieldErrors
+                ));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> violations = new LinkedHashMap<>();
+        for (ConstraintViolation<?> v : ex.getConstraintViolations()) {
+            String path = v.getPropertyPath() != null ? v.getPropertyPath().toString() : "param";
+            violations.putIfAbsent(path, v.getMessage());
+        }
+
+        return ResponseEntity
+                .badRequest()
+                .body(new ApiErrorResponse(
+                        400,
+                        ErrorCode.VALIDATION_ERROR.name(),
+                        "Parametri non validi",
+                        violations
                 ));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex) {
+        LOGGER.error("Unhandled exception", ex);
+
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .status(500)
                 .body(new ApiErrorResponse(
-                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        ErrorCode.INTERNAL_ERROR.toString(),
-                        ex.getMessage()
+                        500,
+                        ErrorCode.INTERNAL_ERROR.name(),
+                        "Errore interno"
                 ));
     }
 }

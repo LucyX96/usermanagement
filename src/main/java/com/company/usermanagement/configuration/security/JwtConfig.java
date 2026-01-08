@@ -1,24 +1,32 @@
 package com.company.usermanagement.configuration.security;
 
-import java.util.Base64;
-import javax.crypto.SecretKey;
-
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.crypto.SecretKey;
+
 @Configuration
 public class JwtConfig {
 
-    private final JwtProperties jwtProperties;
+    private final JwtProperties props;
 
-    public JwtConfig(JwtProperties jwtProperties) {
-        this.jwtProperties = jwtProperties;
+    public JwtConfig(JwtProperties props) {
+        this.props = props;
     }
 
     @Bean
-    public SecretKey secretKey() {
-        byte[] keyBytes = Base64.getDecoder().decode(jwtProperties.secret());
-        return Keys.hmacShaKeyFor(keyBytes);
+    public SecretKey jwtSecretKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(props.secret());
+        SecretKey key = Keys.hmacShaKeyFor(keyBytes);
+
+        int bits = key.getEncoded().length * 8;
+        if (bits < 512) {
+            throw new IllegalStateException(
+                    "JWT secret troppo corta: " + bits + " bits. HS512 richiede >= 512 bits."
+            );
+        }
+        return key;
     }
 }

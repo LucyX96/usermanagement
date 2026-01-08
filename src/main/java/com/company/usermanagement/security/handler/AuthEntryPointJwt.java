@@ -1,34 +1,42 @@
 package com.company.usermanagement.security.handler;
 
+import com.company.usermanagement.exception.ApiErrorResponse;
+import com.company.usermanagement.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Component
 public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public AuthEntryPointJwt(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
-    public void commence(HttpServletRequest request,
-                         HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
+    public void commence(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AuthenticationException authException
+    ) throws IOException {
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        Map<String, Object> body = Map.of(
-                "status", 401,
-                "error", "UNAUTHORIZED",
-                "message", "Token JWT mancante o non valido"
+        ApiErrorResponse body = new ApiErrorResponse(
+                HttpServletResponse.SC_UNAUTHORIZED,
+                ErrorCode.UNAUTHORIZED.name(),
+                "Token JWT mancante o non valido"
         );
 
-        OBJECT_MAPPER.writeValue(response.getOutputStream(), body);
+        objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

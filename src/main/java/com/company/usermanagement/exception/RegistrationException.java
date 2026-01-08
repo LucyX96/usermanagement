@@ -1,12 +1,9 @@
 package com.company.usermanagement.exception;
 
-import java.io.Serial;
+import org.springframework.http.HttpStatus;
 
-public class RegistrationException extends RuntimeException {
-    @Serial
-    private static final long serialVersionUID = 1L;
-
+public class RegistrationException extends ApiException {
     public RegistrationException(String message) {
-        super(message);
+        super(HttpStatus.BAD_REQUEST, ErrorCode.REGISTRATION_ERROR);
     }
 }
