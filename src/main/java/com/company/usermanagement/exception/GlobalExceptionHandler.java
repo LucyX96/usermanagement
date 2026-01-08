@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String USER_ALREADY_EXISTS = "USER_ALREADY_EXISTS";
-    private static final String USER_NOT_FOUND = "USER_NOT_FOUND";
-    private static final String REGISTRATION_ERROR = "REGISTRATION_ERROR";
-    private static final String INTERNAL_ERROR = "INTERNAL_ERROR";
+//    private static final String USER_ALREADY_EXISTS = "USER_ALREADY_EXISTS";
+//    private static final String USER_NOT_FOUND = "USER_NOT_FOUND";
+//    private static final String REGISTRATION_ERROR = "REGISTRATION_ERROR";
+//    private static final String INTERNAL_ERROR = "INTERNAL_ERROR";
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ApiErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex) {
@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .body(new ApiErrorResponse(
                         HttpStatus.CONFLICT.value(),
-                        USER_ALREADY_EXISTS,
+                        ErrorCode.USER_ALREADY_EXISTS.toString(),
                         ex.getMessage()
                 ));
     }
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ApiErrorResponse(
                         HttpStatus.NOT_FOUND.value(),
-                        USER_NOT_FOUND,
+                        ErrorCode.USER_NOT_FOUND.toString(),
                         ex.getMessage()
                 ));
     }
@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ApiErrorResponse(
                         HttpStatus.BAD_REQUEST.value(),
-                        REGISTRATION_ERROR,
+                        ErrorCode.REGISTRATION_ERROR.toString(),
                         ex.getMessage()
                 ));
     }
@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiErrorResponse(
                         HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                        INTERNAL_ERROR,
+                        ErrorCode.INTERNAL_ERROR.toString(),
                         ex.getMessage()
                 ));
     }

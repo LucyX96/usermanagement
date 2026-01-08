@@ -1,0 +1,11 @@
+1) Scaricare Docker Desktop
+
+2) Installare tutte le dipendenze per WSL
+
+3) Scaricare immagine di postgres-latest o postgres:16 dalle immagini docker
+
+4) Avviare il container dalle immagini con optional settings (vedi punto 5)
+
+5) Container name deve essere il nome del db che trovi in application.properties jdbc:postgresql://localhost:5432/auth_service_dev (auth_service)
+
+6) Environment Variables settate con Variabile di set password e valore con la password settata in application.properties
